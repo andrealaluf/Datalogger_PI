@@ -1,0 +1,244 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/python
+import time, datetime
+import serial
+import os
+import Queue
+from class_Dato import Dato
+from class_sensor import Sensor
+
+''' Esta es la clase generica que va a contener a las clases de abajo.
+Es la clase padre
+'''
+class TristarTS60(Sensor):
+	
+	global tiempoInicial
+	global tiempoTranscurrido 
+	
+	
+	# Diccionario que va a tener los ultimos valores de los sensores,
+	# que pida por puerto serial al equipo, siendo mas facil ingresar
+	# mediante el uso de la key. El primer atributo es el tiempo en que
+	# se solicitó el ultimo dato y el segundo es el valor almacenado.
+	valorSensor = { 'TS60V_bat' : [int(time.time()),0],
+					'TS60V_pan' : [int(time.time()),0],
+					'TS60I_carga' : [int(time.time()),0],
+					'TS60I_load' : [int(time.time()),0],
+					'TS60T_equipo' : [int(time.time()),0],
+					'TS60T_bat' : [int(time.time()),0]}
+	
+	def __init__(self,name):
+		
+		# Instancia de un sensor
+		Sensor.__init__(self,name)
+		
+		#self.name = name
+		#self.unit = None
+		
+		# No olvidar que time.time() es en epoch time
+		#self.tiempoInicial = round(time.time())
+	
+	def getValor(self):
+
+		# Obtengo el nombre de la clase para buscarlo en el diccionario 
+		# valorSensor
+		nombre_sensor = self.__class__.__name__
+		#print "Soy la clase: \n",nombre_sensor
+		
+		# Verifico si el tiempo transcurrido en segs es mucho (> 1 min)
+		#tiempoTranscurrido = round(time.time()-self.tiempoInicial)
+		tiempoTranscurrido = int(round(time.time()-self.valorSensor[nombre_sensor][0]))
+		#tiempoTranscurrido = tiempoTranscurrido / 60
+		#tiempoTranscurrido = time.time() - self.valorSensor[nombre_sensor][0]
+		
+		#print "tiempoInicial: ", self.tiempoInicial
+		#print "tiempoInicial: ", self.valorSensor[nombre_sensor][0]
+		print "tiempoTranscurrido: ",tiempoTranscurrido
+		#self.tiempoInicial = self.tiempoTranscurrido + self.tiempoInicial
+		
+		if tiempoTranscurrido < 10: 
+			#self.valorSensor[nombre_sensor][0] = tiempoTranscurrido
+			print self.valorSensor
+			#return self.valorSensor[nombre_sensor][1]
+
+			# Devuelvo el objeto DATO
+			#return Dato(nombre_sensor,self.valorSensor[nombre_sensor][1])
+		else:
+			self.readRegisters()
+			print self.valorSensor
+			
+			#return self.valorSensor[nombre_sensor][1]
+			#return sensor.getValue()
+			
+		# Devuelvo el objeto DATO
+		return Dato(nombre_sensor,self.valorSensor[nombre_sensor][1])
+
+			
+	'''#################################################################
+	Se encarga de crear la conectividad serial
+	###################################################################'''
+	def StartSerial(self):
+		sp = serial.Serial()
+		sp.port = self.ScanSerialPorts()
+		sp.baudrate = 9600
+		sp.parity = serial.PARITY_NONE
+		sp.bytesize = serial.EIGHTBITS
+		sp.stopbits = serial.STOPBITS_TWO
+		
+		sp.open()
+		return sp
+		
+	'''#################################################################
+	 Busca los nombres de dispositivos seriales que hay en el sistema
+	 ##################################################################'''	
+	def ScanSerialPorts(self):
+		# Variable para la ruta al directorio
+		path = "/dev/serial/by-id/"
+		
+		# Lista todos los archivos en ese directorio
+		lstDir = os.listdir(path)
+		
+		serialDevice =''.join(path)
+		serialDevice += serialDevice.join(lstDir)
+		
+		# El nombre del dispositivo serial
+		return serialDevice 
+	
+	'''#################################################################
+	Lectura de la trama de datos (holding registers)
+	###################################################################'''
+	def readRegisters(self):
+		
+		sp=self.StartSerial()
+		
+		out = '' # la uso para almacenar la trama recibida
+		
+		### Solicitud de lectura de Holding Registers ###
+		sp.write("010300080009040e".decode('hex'))
+		time.sleep(1)
+		'''Hacerlo con inwaiting porque si leo por una cierta cantidad de bytes
+		en algunas ocasiones no llega la trama entera'''
+		while sp.inWaiting() > 0:
+			out += sp.read(1)
+		#out = sp.readline(21) # haciendolo de esta forma evito los ultimos 2 bytes que son CRC (total=23bytes)
+		print out.encode('hex'),'\n'                       
+		
+		# Point Addr = 4009 -> Vbat
+		adc_vb_f=int(out[3:5].encode('hex'),16) # Convierto de string hexa a int
+		adc_vb_f= adc_vb_f*96.667*pow(2,-15)# Obtengo el valor decimal
+		print "Battery voltage, filtered= %.2f" %adc_vb_f
+	
+		# Point Addr = 4010
+		adc_vs_f=int(out[5:7].encode('hex'),16)
+		adc_vs_f = adc_vs_f*96.667*pow(2,-15)
+		print "Battery sense voltage, filtered= %.2f" %adc_vs_f
+	
+		# Point Addr = 4011
+		# Tension del panel solar
+		adc_vx_f=int(out[7:9].encode('hex'),16)
+		adc_vx_f = adc_vx_f*139.15*pow(2,-15)
+		print "Array/Load voltage, filtered= %.2f" %adc_vx_f
+	
+		# Point Addr = 4012
+		adc_ipv_f=int(out[9:11].encode('hex'),16)
+		adc_ipv_f = adc_ipv_f*66.667*pow(2,-15)
+		print "Charging current, filtered= %.2f" %adc_ipv_f
+	
+		# Point Addr = 4013
+		adc_iload_f=int(out[11:13].encode('hex'),16)
+		adc_iload_f = adc_iload_f*316.67*pow(2,-15)
+		print "Load current, filtered= %.2f" %adc_iload_f
+	
+		# Point Addr = 4014
+		Vb_f=int(out[13:15].encode('hex'),16)
+		Vb_f = Vb_f*96.667*pow(2,-15)
+		print "Battery voltage, slow filter= %.2f V" %Vb_f
+	
+		# Point Addr = 4015
+		T_hs=int(out[15:17].encode('hex'),16)
+		print "Heatsink temperature= ", T_hs
+	
+		# Point Addr = 4016
+		T_batt=int(out[17:19].encode('hex'),16)
+		print "Battery temperature= ",T_batt
+	
+		# Point Addr = 4017
+		V_ref=int(out[19:21].encode('hex'),16)
+		V_ref =V_ref*96.667*pow(2,-15)
+		print "Charge regulator reference voltage= %.2f" %V_ref
+		
+		sp.close()
+		
+		# Actualizo los valores de cada sensor en el diccionario
+		'''
+		self.valorSensor['TS60-V_bat']=round(adc_vb_f,2)
+		self.valorSensor['TS60-V_pan']=round(adc_vx_f,2)
+		self.valorSensor['TS60-I_carga']=round(adc_ipv_f,2)
+		self.valorSensor['TS60-I_load']=round(adc_iload_f,2)
+		self.valorSensor['TS60-T_equipo']=T_hs
+		self.valorSensor['TS60-T_bat']=T_batt
+		'''
+		self.valorSensor['TS60V_bat']=[int(time.time()),round(adc_vb_f,2)]
+		self.valorSensor['TS60V_pan']=[int(time.time()),round(adc_vx_f,2)]
+		self.valorSensor['TS60I_carga']=[int(time.time()),round(adc_ipv_f,2)]
+		self.valorSensor['TS60I_load']=[int(time.time()),round(adc_iload_f,2)]
+		self.valorSensor['TS60T_equipo']=[int(time.time()),T_hs]
+		self.valorSensor['TS60T_bat']=[int(time.time()),T_batt]
+		
+########################################################################
+########## CREACION DE LAS SUBCLASES DE TristarTS60    #################
+########################################################################		
+class TS60V_bat(TristarTS60):
+	def __init__(self):
+		# llamamos al constructor TristarTS60
+		TristarTS60.__init__(self,"TS60V_bat")
+
+		#def getValor(self):
+		#	return TristarTS60.getValor("TS60-V_bat")
+		
+class TS60V_pan(TristarTS60):
+	def __init__(self):
+		# llamamos al constructor TristarTS60
+		TristarTS60.__init__(self,"TS60V_pan")
+
+class TS60I_carga(TristarTS60):
+	def __init__(self):
+		# llamamos al constructor TristarTS60
+		TristarTS60.__init__(self,"TS60I_carga")
+	
+class TS60I_load(TristarTS60):
+	def __init__(self):
+		# llamamos al constructor TristarTS60
+		TristarTS60.__init__(self,"TS60I_load")
+		
+class TS60T_equipo(TristarTS60):
+	def __init__(self):
+		# llamamos al constructor TristarTS60
+		TristarTS60.__init__(self,"TS60T_equipo")
+	
+class TS60T_bat(TristarTS60):
+	def __init__(self):
+		# llamamos al constructor TristarTS60
+		TristarTS60.__init__(self,"TS60T_bat")
+
+	
+		
+'''		
+if __name__ == '__main__':
+	
+	print TS60I_carga().getName()
+	print TS60I_carga().getUnit()
+	
+	print TS60I_carga().getName()
+	print TS60I_load().getName()
+	print TS60V_pan().getName()
+	print TS60V_pan().getValor(TS60V_pan().getName())
+
+'''
+
+print TS60I_carga().getName()
+print TS60V_bat().getName()
+print TS60V_pan().getName()
+print TS60I_load().getName()
+print TS60T_equipo().getName()
+print TS60T_bat().getName()

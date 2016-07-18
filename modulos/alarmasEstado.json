@@ -1,0 +1,62 @@
+{
+    "TS60T_equipo": [
+        "AlarmaMaxAlta:Registrar", 
+        "AlarmaMaxBaja:Registrar", 
+        "AlarmaMaxMedia:Registrar", 
+        "AlarmaMaxUrg:Registrar", 
+        "AlarmaMinAlta:Llamar", 
+        "AlarmaMinBaja:Registrar", 
+        "AlarmaMinMedia:Registrar", 
+        "AlarmaMinUrg:Registrar"
+    ], 
+    "TS60V_bat": [
+        "AlarmaMaxAlta:Registrar", 
+        "AlarmaMaxBaja:Registrar", 
+        "AlarmaMaxMedia:Registrar", 
+        "AlarmaMaxUrg:Registrar", 
+        "AlarmaMinAlta:Registrar", 
+        "AlarmaMinBaja:Registrar", 
+        "AlarmaMinMedia:Registrar", 
+        "AlarmaMinUrg:Registrar"
+    ], 
+    "TS60T_bat": [
+        "AlarmaMaxAlta:Registrar", 
+        "AlarmaMaxBaja:Registrar", 
+        "AlarmaMaxMedia:Registrar", 
+        "AlarmaMaxUrg:Registrar", 
+        "AlarmaMinAlta:Registrar", 
+        "AlarmaMinBaja:Registrar", 
+        "AlarmaMinMedia:Registrar", 
+        "AlarmaMinUrg:Registrar"
+    ], 
+    "TS60V_pan": [
+        "AlarmaMaxAlta:Registrar", 
+        "AlarmaMaxBaja:Registrar", 
+        "AlarmaMaxMedia:Registrar", 
+        "AlarmaMaxUrg:Registrar", 
+        "AlarmaMinAlta:Registrar", 
+        "AlarmaMinBaja:Registrar", 
+        "AlarmaMinMedia:Registrar", 
+        "AlarmaMinUrg:Registrar"
+    ], 
+    "TS60I_carga": [
+        "AlarmaMaxAlta:Registrar", 
+        "AlarmaMaxBaja:Registrar", 
+        "AlarmaMaxMedia:Registrar", 
+        "AlarmaMaxUrg:Registrar", 
+        "AlarmaMinAlta:Registrar", 
+        "AlarmaMinBaja:EnviarMsj", 
+        "AlarmaMinMedia:Registrar", 
+        "AlarmaMinUrg:Registrar"
+    ], 
+    "TS60I_load": [
+        "AlarmaMaxAlta:Registrar", 
+        "AlarmaMaxBaja:Registrar", 
+        "AlarmaMaxMedia:Registrar", 
+        "AlarmaMaxUrg:Registrar", 
+        "AlarmaMinAlta:Registrar", 
+        "AlarmaMinBaja:EnviarMsj", 
+        "AlarmaMinMedia:Llamar", 
+        "AlarmaMinUrg:Registrar"
+    ]
+}

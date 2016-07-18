@@ -1,0 +1,8 @@
+{ 
+	"TemperatureDHT11" : ["Celsius",12,5,25,31],
+	"UltrasonicHC_SR04" : ["cm",12,5,25,31]
+	
+}
+
+
+				
